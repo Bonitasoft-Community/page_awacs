@@ -1,0 +1,306 @@
+<!doctype html>
+<!--[if lt IE 7]>
+<html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>
+<html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>
+<html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!-->
+<html class="no-js"> <!--<![endif]-->
+<head>
+    <meta charset="utf-8">
+    <title>Awacs</title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width">
+    <link rel="stylesheet" href="pageResource?page=custompage_awacs&location=style/animate.css" />
+    <link rel="stylesheet" href="pageResource?page=custompage_awacs&location=style/bootstrap.min.css">
+	<link rel="stylesheet" href="pageResource?page=custompage_awacs&location=style/main.css">
+	<link rel="stylesheet" href="pageResource?page=custompage_awacs&location=style/style.css">
+	<link rel="stylesheet" href="pageResource?page=custompage_awacs&location=style/toggle.css">
+
+	<script type="text/javascript" src="https://www.google.com/jsapi"></script>
+	<script type="text/javascript" src="https://www.google.com/uds/?file=visualization&amp;v=1&amp;hl=fr&amp;packages=corechart&amp;async=2"></script>
+	<link type="text/css" href="https://www.google.com/uds/api/visualization/1.0/ff67c3772da186a412ae3231c32409e9/ui+fr.css" rel="stylesheet">
+	<script type="text/javascript" src="https://www.google.com/uds/api/visualization/1.0/ff67c3772da186a412ae3231c32409e9/format+fr,default+fr,ui+fr,corechart+fr.I.js"></script>
+	<link href="https://ajax.googleapis.com/ajax/static/modules/gviz/1.0/core/tooltip.css" rel="stylesheet" type="text/css">
+
+
+</head>
+<body ng-app="xxmonitor">
+
+
+<div class="bs-component"  ng-controller="MainController as mainctrl">
+
+	<center>
+	<table><tr><td><h1>Awacs</h1></td><td rowspan="2"><img src="pageResource?page=custompage_awacs&location=img/awacs.png" width="150" heigth="150" /></td></tr>
+		<tr><td style="font-size:0.8em"> <a href="" ng-click="mainctrl.showhistory( ! mainctrl.isshowhistory )">V1.0</a></td></tr>
+		<tr><td>
+		<div id="showHistory" ng-show="mainctrl.isshowhistory" style="border-width:2px;border-style:ridge;border-color:blue">
+		1.0 First version<br>
+		</td></tr>
+		</div>
+	</table>
+	</center>
+</div>
+
+	<!-- process monitor -->
+	<div class="col-lg-12">
+
+		<div class="bs-component" ng-mouseenter="hover('apps')" ng-mouseleave="hover('apps')"  ng-controller="MonitorProcessController as moniprocessesctrl">
+			<legend class="text-primary"><span class="glyphicon glyphicon-th"></span>Monitor process</legend>
+
+			<div class="panel panel-primary">
+				<div class="panel-body">
+					<div class="explanation">
+					Display all processes
+					</div>
+					<button id="collectProcessesbtn" ng-click="moniprocessesctrl.refresh()" class="btn btn-info btn-xs" title="Show the processes and cases"/>Show Processes/cases</button><p>
+
+					<div id="collectProcessesWait" style="background-color:green;color: #FFFFFF;">Please wait, collect in progress</div>
+
+					<div class="alert alert-danger" role="alert" ng-show="moniprocessesctrl.errormessage.length > 0">{{moniprocessesctrl.errormessage}}</div>
+
+					<a href="" ng-click="moniprocessesctrl.showlegend( ! moniprocessesctrl.isshowlegend )">Legend</a>
+					<div id="showLegend" ng-show="moniprocessesctrl.isshowlegend" style="border-width:2px;border-style:ridge;border-color:blue">
+						<li>Details: show or hide the detail activity per activity<br>
+						<li>Name: Process name
+						<li>Version: Process version
+						<li>State: State of process
+						<li>Deployed Date: date of deploiement
+						<li>Cases: number open cases
+						<li>Analysis: result of the analysis. Take into account the different level "warmoverflowtasks", "warnearbytasks", "warmtask"<br>
+						   For exemple, give as DESCRIPTION in the process warmoverflowtasks:45;warnearbytasks=22;warmtask=3000
+						<li>Tasks: number of open tasks (one case may have multiple tasks)
+						<li>Overflow: number of <b>human tasks</b> who exceded the time allowed to work on<br>
+						            Example, in the task, design show the task must be managed in 5 hours, and this is the number of task waiting more than 5 hours
+						<li>Near: number of <b>human tasks</b> which will be overflow in the next hour<b>
+					</div>
+					<h2>Processes</h2>
+						Overflow: <input  type="text" ng-model="moniprocessesctrl.defaultWarningNbOverflowTasks" style="width:40px;" />
+						Near: <input  type="text" ng-model="moniprocessesctrl.defaultWarningNearbyTasks" style="width:40px;"/>
+						Task: <input  type="text" ng-model="moniprocessesctrl.defaultWarningNbTasks" style="width:40px;"/>
+						ActiviyPastInMn: <input  type="text" ng-model="moniprocessesctrl.activityPeriodInMn" style="width:40px;"/>
+						Max Items: <input  type="text" ng-model="moniprocessesctrl.defaultmaxitems" style="width:80px;"/>
+						Study past activity: <input  type="checkbox" ng-model="moniprocessesctrl.studypastactivities" style="width:80px;"/>
+
+						<br>
+						<!-- <table class="table table-striped table-hover table-condensed" style="background-color:#C49E71"> -->
+						<table class="table table-hover table-condensed" >
+						<tr style="background-color:#007DB3">
+							<th>Details</th>
+							<th>Name</th>
+							<th>Version</th>
+							<th>State</th>
+							<th>Deployed date</th>
+							<th>Cases</th>
+							<th>Analysis</th>
+							<th>Tasks</th>
+							<th>Overflow</th>
+							<th>Near</th>
+							<th>Failed</th>
+							<th>Executing</th>
+							<th>Activity</th>
+							<th>Analysis in (ms)</th>
+						</tr>
+
+						<tbody ng-repeat="oneprocess in moniprocessesctrl.processes track by $index">
+							<tr style="background-color:#C49E71">
+								<td><input type="checkbox" ng-model="oneprocess.showdetails" />Details</td>
+								<td>{{oneprocess.name}}</td>
+								<td>{{oneprocess.version}}</td>
+								<td>{{oneprocess.state}}</td>
+								<td>{{oneprocess.deployedDate}}</td>
+								<td>{{oneprocess.nbCases}}</td>
+								<td>
+									<span class="label label-warning" ng-show="oneprocess.shownearbywarning">Warning</span>&nbsp;
+									<span class="label label-danger" ng-show="oneprocess.showoverflowwarning">Overflow</span>&nbsp;
+									<span class="label label-danger" ng-show="oneprocess.showtaskswarning">Tasks</span>&nbsp;
+									<span class="label label-danger" ng-show="oneprocess.showtasksfailed">Failed</span>&nbsp;
+									<span class="label label-danger" ng-show="oneprocess.showerrormaxitems">Max Item</span>&nbsp;
+
+
+									<!-- {{oneprocess.analysisStatus}} -->
+								</td>
+								<td>{{oneprocess.nbTasks}}</td>
+								<td>{{oneprocess.nbOverflowTasks}}</td>
+								<td>{{oneprocess.nbNearbyTasks}}</td>
+								<td>{{oneprocess.nbFailedTasks}}</td>
+								<td>{{oneprocess.nbExecutingTasks}}</td>
+								<td>{{oneprocess.nbActivitiesPeriod}}</td>
+								<td>{{oneprocess.timeAnalysisMs}}</td>
+							</tr>
+								<tr style="background-color:#99D9EA" ng-show="oneprocess.showdetails">
+									<td></td>
+									<td><i>ActivityName</i></td>
+									<td></td> <td></td> <td></td> <td></td> <td></td>
+									<td><i>Tasks</i></td>
+									<td><i>Overflow</i></td>
+									<td><i>Near</i></td>
+									<td><i>Failed</i></td>
+									<td><i>Executing</i></td>
+									<td><i>Activity</i></td>
+									<td><i>TimeAnalysis</i></td>
+
+								</tr>
+								<tr ng-repeat="activity in oneprocess.activities track by $index" ng-show="oneprocess.showdetails">
+									<td></td>
+									<td>{{activity.name}}</td>
+									<td></td> <td></td> <td></td> <td></td>
+									<td>
+										<span class="label label-warning" ng-show="activity.shownearbywarning">Warning {{activity.nbNearbyTasks}}</span>&nbsp;
+										<span class="label label-danger" ng-show="activity.showoverflowwarning">Overflow {{activity.nbOverflowTasks}} </span>&nbsp;
+										<span class="label label-danger" ng-show="activity.showtaskswarning">Tasks {{activity.nbTasks}} </span>&nbsp;
+										<span class="label label-danger" ng-show="activity.showtasksfailed">Failed</span>&nbsp;
+										<span class="label label-danger" ng-show="activity.showerrormaxitems">Max Item</span>&nbsp;
+
+									</td>
+									<!-- <td>{{activity.id}}</td> -->
+									<td>{{activity.nbTasks}}</td>
+									<td>{{activity.nbOverflowTasks}}
+
+									</td>
+									<td>{{activity.nbNearbyTasks}}</td>
+									<td>{{activity.nbFailedTasks}}</td>
+									<td>{{activity.nbExecutingTasks}}</td>
+									<td>{{activity.nbActivitiesPeriod}}</td>
+									<td>{{activity.timeAnalysisMs}}</td>
+
+								</tr>
+
+								<tr ng-repeat="graph in oneprocess.processgraph track by $index" ng-show="oneprocess.showdetails">
+									<td></td>
+									<td colspan="4">
+
+										<div google-chart chart="graph.createcase" style="height: 200px; width: 100%; position: relative; "></div>
+									</td>
+								</tr>
+
+
+						</tbody>
+					</table>
+					{{moniprocessesctrl.status}}
+
+				</div>
+			</div>
+		</div>
+		
+		<div class="bs-component" ng-mouseenter="hover('apps')" ng-mouseleave="hover('apps')"  ng-controller="MonitorUserController as moniuserctrl">
+			<legend class="text-primary"><span class="glyphicon glyphicon-th"></span>Monitor User</legend>
+
+			<div class="panel panel-primary">
+				<div class="panel-body">
+					<div class="explanation">
+					User activity
+					</div>
+					<button id="collectUserbtn" ng-click="moniuserctrl.refresh()" class="btn btn-info btn-xs" title="Show the processes and cases"/>Show User Activity</button><p>
+
+					<div id="collectUserWait" style="background-color:green;color: #FFFFFF;">Please wait, collect in progress</div>
+
+					<div class="alert alert-danger" role="alert" ng-show="moniuserctrl.errormessage.length > 0">{{moniuserctrl.errormessage}}</div>
+					{{moniuserctrl.status}}
+					
+					<a href="" ng-click="moniuserctrl.showlegend( ! moniuserctrl.isshowlegend )">Legend</a>
+					<div id="showLegend" ng-show="moniuserctrl.isshowlegend" style="border-width:2px;border-style:ridge;border-color:blue">
+					the activity (users submits tasks) are study in the last minutes (give the perimeters) to calculate the activity.
+						<li>Details: show or hide the detail activity per activity<br>
+						<li>Name: Process name
+						<li>Tasks performed :
+						<li>Tasks overflowed: number of task performed, but late
+						<li>Time work: average of time need between the task is ready, and the task is submitted
+						<li>Assigned Tasks : number of task currently assigned to the user
+						<li><span class="label label-danger">Overflow</span>: this warning appears only when ACTIVES tasks available for the user are overflowed
+						<li><span class="label label-danger">Overflow Assigned</span>: this warning appears only when ACTIVES tasks assigned for the user are overflowed
+						</div>
+					<h2>Users</h2>
+						Perimeter: <input  type="text" ng-model="moniuserctrl.activityPeriodInMn" style="width:40px;"/> mn 
+						Max. Items: <input  type="text" ng-model="moniuserctrl.defaultmaxitems" style="width:80px;"/>
+						Group: <input  type="text" ng-model="moniuserctrl.filtergroup" style="width:200px;"/>
+						Role: <input  type="text" ng-model="moniuserctrl.filterrole" style="width:200px;"/>
+						User: <input  type="text" ng-model="moniuserctrl.filteruser" style="width:200px;"/>
+						<br>
+						<!-- <table class="table table-striped table-hover table-condensed" style="background-color:#C49E71"> -->
+						<table class="table table-hover table-condensed" >
+						<tr style="background-color:#007DB3">
+						    <th>Detail</th>
+							<th>User</th>
+							<th>Tasks performed</th>
+							<th>Tasks overflowed</th>
+							<th>Time work</th>
+							
+							<th>Pending Tasks</th>
+							<th>Assigned Tasks</th>
+
+						</tr>
+
+						<tbody ng-repeat="oneuser in moniuserctrl.users track by $index">
+							<tr style="background-color:#C49E71">
+
+								<td><input type="checkbox" ng-model="oneuser.showdetails" />Details</td>
+								<td>{{oneuser.totalName}} <span class="label label-info" ng-show="oneuser.isActive">Active</span> </td>
+								<td align="right">{{oneuser.nbTasksSubmitted}}</td>
+								<td align="right">{{oneuser.nbOverflowedTasks}}</td>
+								<td align="right">{{oneuser.avgtimemn}} mn</td>
+								
+								<!-- current informaton -->
+								<td align="right" style="background-color:#99D9EA"> {{oneuser.nbPendingTasks}}
+									<span class="label label-danger" ng-show="oneuser.showOverflowPendingWarning">Overflow {{oneuser.nbOverflowPendingTasks}}</span>&nbsp;
+								</td>
+								<td align="right" style="background-color:#99D9EA">{{oneuser.nbAssignedTasks}}
+									<span class="label label-danger" ng-show="oneuser.showOverflowAssignedWarning">Overflow Assigned{{oneuser.nbOverflowAssignedTasks}}</span>&nbsp;
+								</td>
+								
+
+							</tr>
+							<tr ng-repeat="graph in oneuser.graphs track by $index" ng-show="oneuser.showdetails">
+									<td></td>
+									<td colspan="4">
+
+										<div google-chart chart="graph.submittasks" style="height: 200px; width: 100%; position: relative; "></div>
+									</td>
+								</tr>
+
+						</tbody>
+					</table>
+					<h1>Main statistics</h1>
+					<div google-chart chart="moniuserctrl.graphtasksperusers" style="height: 200px; width: 100%; position: relative; "></div>
+
+					{{moniuserctrl.status}}
+
+				</div>
+			</div>
+			
+			
+			
+			
+		</div>
+		
+		
+	</div>
+
+
+
+
+
+
+
+
+<!-- Third party dependencies -->
+
+<script src="pageResource?page=custompage_awacs&location=3rd-party/jquery.min.js"></script>
+
+<script src="pageResource?page=custompage_awacs&location=3rd-party/angular.min.js"></script>
+
+<script src="pageResource?page=custompage_awacs&location=3rd-party/angular-resource.min.js"></script>
+<script src="pageResource?page=custompage_awacs&location=3rd-party/angular-cookies.min.js"></script>
+
+<script src="pageResource?page=custompage_awacs&location=3rd-party/bootstrap/js/bootstrap.min.js"></script>
+<script src="pageResource?page=custompage_awacs&location=3rd-party/angular-bootstrap-tpls.min.js"></script>
+<script src="pageResource?page=custompage_awacs&location=3rd-party/angular-file-upload.js"></script>
+<script src="pageResource?page=custompage_awacs&location=3rd-party/ng-google-chart.js"></script>
+
+
+<!-- Application dependencies -->
+<script src="pageResource?page=custompage_awacs&location=awacsmonitor.js"></script>
+
+</body>
+</html>
