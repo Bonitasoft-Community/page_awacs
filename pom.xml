@@ -1,14 +1,14 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<properties>
 		<!-- <ping.version>2.4.0</ping.version> -->
-		<bonita.version>7.9.0</bonita.version>
+		<bonita.version>7.11.0</bonita.version>
 	   	<maven.compiler.source>1.8</maven.compiler.source>
    		<maven.compiler.target>1.8</maven.compiler.target>
 	</properties>
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.bonitasoft.custompage</groupId>
-	<artifactId>CustomPageAwacs</artifactId>
-	<version>1.0.1</version>
+	<artifactId>bonita-awac</artifactId>
+	<version>1.1.0</version>
 
 	<dependencies>
 		<dependency>
@@ -39,7 +39,7 @@
 		<dependency>
 			<groupId>org.bonitasoft.store</groupId>
 			<artifactId>bonita-store</artifactId>
-			<version>1.1.0</version>
+			<version>2.3.0</version>
 		</dependency>
 		
 
