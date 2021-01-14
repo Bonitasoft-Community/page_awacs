@@ -6,7 +6,7 @@
 (function() {
 
 
-var appCommand = angular.module('xxmonitor', ['googlechart', 'ui.bootstrap']);
+var appCommand = angular.module('xxmonitor', ['googlechart', 'ui.bootstrap',  'ngCookies']);
 
 
 // appCommand.config();
@@ -49,7 +49,7 @@ appCommand.controller('MainController',
 // --------------------------------------------------------------------------
 
 appCommand.controller('MonitorProcessController',
-	function ($scope,$http) {
+	function ($scope,$http, $cookies ) {
 		$('#collectProcessesbtn').show();
 		$('#collectProcessesWait').hide();
 		this.alldetails=true;
@@ -65,6 +65,19 @@ appCommand.controller('MonitorProcessController',
 		{
 			this.isshowlegend = show;
 		};
+		
+		this.getHttpConfig = function () {
+			var additionalHeaders = {};
+			var csrfToken = $cookies.get('X-Bonita-API-Token');
+			if (csrfToken) {
+				additionalHeaders ['X-Bonita-API-Token'] = csrfToken;
+			}
+			var config= {"headers": additionalHeaders};
+			console.log("GetHttpConfig : "+angular.toJson( config));
+			return config;
+		}
+		
+		
 		this.refresh = function()
 		{
 
@@ -81,9 +94,10 @@ appCommand.controller('MonitorProcessController',
 				};
 
 
+			var json = encodeURI( angular.toJson( postMsg, false));
 
 			var self = this;
-			$http.get( '?page=custompage_awacs&action=monitoringprocess&paramjson='+ angular.toJson(postMsg, true))
+			$http.get( '?page=custompage_awacs&action=monitoringprocess&paramjson='+json, this.getHttpConfig())
 			  .success(function success(jsonResult) {
 				console.log('receive ',jsonResult);
 				self.processes 						= jsonResult.processes;

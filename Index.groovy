@@ -29,6 +29,7 @@ import java.sql.DatabaseMetaData;
 import org.apache.commons.lang3.StringEscapeUtils
  
 import org.bonitasoft.engine.identity.User;
+
 import org.bonitasoft.web.extension.page.PageContext;
 import org.bonitasoft.web.extension.page.PageController;
 import org.bonitasoft.web.extension.page.PageResourceProvider;
@@ -40,136 +41,115 @@ import org.bonitasoft.engine.exception.DeletionException;
 import org.bonitasoft.engine.exception.ServerAPIException;
 import org.bonitasoft.engine.exception.UnknownAPITypeException;
 
-import org.bonitasoft.engine.api.TenantAPIAccessor;
 import org.bonitasoft.engine.session.APISession;
-import org.bonitasoft.engine.api.CommandAPI;
-import org.bonitasoft.engine.api.ProcessAPI;
-import org.bonitasoft.engine.api.IdentityAPI;
-import org.bonitasoft.engine.search.SearchOptionsBuilder;
-import org.bonitasoft.engine.bpm.flownode.ActivityInstanceSearchDescriptor;
-import org.bonitasoft.engine.bpm.flownode.ArchivedActivityInstanceSearchDescriptor;
-import org.bonitasoft.engine.bpm.flownode.ActivityInstance;
-import org.bonitasoft.engine.bpm.flownode.ArchivedFlowNodeInstance;
-import org.bonitasoft.engine.bpm.flownode.ArchivedActivityInstance;
-import org.bonitasoft.engine.search.SearchOptions;
-import org.bonitasoft.engine.search.SearchResult;
 
-import org.bonitasoft.engine.command.CommandDescriptor;
-import org.bonitasoft.engine.command.CommandCriterion;
-import org.bonitasoft.engine.bpm.flownode.ActivityInstance;
-
-
-import com.bonitasoft.custompage.awacs.monitoring.MonitoringProcesses;
-import com.bonitasoft.custompage.awacs.monitoring.MonitoringProcesses.MonitorProcessInput;
-import com.bonitasoft.custompage.awacs.monitoring.MonitoringUsers;
-import com.bonitasoft.custompage.awacs.monitoring.MonitoringUsers.MonitorUsersInput;
 
 
 public class Index implements PageController {
 
+	private static String pageName="workshoptruck";
+	private static Logger loggerCustomPage= Logger.getLogger("org.bonitasoft.custompage."+pageName+".groovy");
+	
+	
+	public static class ActionAnswer
+	{
+		/*
+		 * if true, the answer is managed by the action (else, it should be an HTML call)
+		 */
+		public boolean isManaged=false;
+		/*
+		 * if true, the response is in responseMap, and a JSON is necessary
+		 */
+		public boolean isResponseMap=true;
+		/*
+		 * the response under a Map 
+		 */
+		public Map<String,Object> responseMap =new HashMap<String,Object>();
+		public void setResponse(Map<String,Object> response )
+		{
+			responseMap = response;
+			isResponseMap=true;
+		}
+		
+	}
 	@Override
 	public void doGet(HttpServletRequest request, HttpServletResponse response, PageResourceProvider pageResourceProvider, PageContext pageContext) {
-	
-		Logger logger= Logger.getLogger("org.bonitasoft.custompage.awacs.groovy");
-		
 		
 		try {
-			def String indexContent;
-			pageResourceProvider.getResourceAsStream("Index.groovy").withStream { InputStream s-> indexContent = s.getText() };
-			response.setCharacterEncoding("UTF-8");
-			PrintWriter out = response.getWriter()
-
-			String action=request.getParameter("action");
-			logger.info("#### awacsCustomPage:Groovy  action is["+action+"] !");
-			if (action==null || action.length()==0 )
+			String requestParamJson= request.getParameter("paramjson");
+			String requestParamJsonSt ="";
+			try
 			{
+			    requestParamJsonSt = requestParamJson; // in fact, the request is decoded by the Tomcat Server
+			    // requestParamJsonSt = (requestParamJson==null ? null : java.net.URLDecoder.decode(requestParamJson, "UTF-8"));
+			}
+			catch(Exception e)
+			{
+			      StringWriter sw = new StringWriter();
+		          e.printStackTrace(new PrintWriter(sw));
+		          String exceptionDetails = sw.toString();
+		          loggerCustomPage.severe("#### "+pageName+":Groovy Exception ["+e.toString()+"] at "+exceptionDetails+" Decode["+requestParamJson+"]");
+		          
+		          PrintWriter out = response.getWriter()
+		          response.setCharacterEncoding("UTF-8");
+	              response.addHeader("content-type", "application/json");
+	              out.write( "{\"status\":\"BadjsonParam\"} " );
+	              out.flush();
+	              out.close();
+	              return;
+			}
+			loggerCustomPage.info("#### "+pageName+":Groovy , requestParamJsonSt=["+requestParamJsonSt+"] (source is["+requestParamJson+"])" );
+			
+			
+			Index.ActionAnswer actionAnswer = Actions.doAction( request, requestParamJsonSt,  response, pageResourceProvider, pageContext );
+			if (! actionAnswer.isManaged)
+			{
+				loggerCustomPage.info("#### "+pageName+"Groovy NoAction, return index.html" );
 				runTheBonitaIndexDoGet( request, response,pageResourceProvider,pageContext);
 				return;
 			}
-			String paramJson= request.getParameter("paramjson");
+			loggerCustomPage.info("#### "+pageName+":Groovy , ResponseMap="+actionAnswer.responseMap.size() );
 			
-			
-			APISession session = pageContext.getApiSession()
-			ProcessAPI processAPI = TenantAPIAccessor.getProcessAPI(session);
-			IdentityAPI identityAPI = TenantAPIAccessor.getIdentityAPI(session);
-
-			CommandAPI commandAPI = TenantAPIAccessor.getCommandAPI(session);
-			
-			HashMap<String,Object> answer = null;
-			
-			
-			if ("monitoringprocess".equals(action))
+			if (actionAnswer.responseMap.size()>0)
 			{
-				logger.info("#### awacsCustomPage:Groovy monitoringProcesses");
-				MonitorProcessInput monitorProcessInput =  MonitorProcessInput.getInstanceFromJsonSt( paramJson );
-				answer  = MonitoringProcesses.monitorProcesses( monitorProcessInput, processAPI );				
-			}
-			else if ("monitoringuser".equals(action))
-			{
-				logger.info("#### awacsCustomPage:Groovy monitoringUsers");
-				MonitorUsersInput monitorUsersInput =  MonitorUsersInput.getInstanceFromJsonSt( paramJson );
-				answer  = MonitoringUsers.monitorUsers( monitorUsersInput, identityAPI, processAPI );				
-			}
-			if (answer!=null)
-			{
-				String jsonSt = JSONValue.toJSONString( answer );
+				response.setCharacterEncoding("UTF-8");
+				response.addHeader("content-type", "application/json");
+				
+				PrintWriter out = response.getWriter()
+				String jsonSt = JSONValue.toJSONString( actionAnswer.responseMap );
 				out.write( jsonSt );
-				logger.info("#### awacsCustomPage:Groovy return json["+jsonSt+"]" );
+				loggerCustomPage.info("#### ##############################CustomPage: return json["+jsonSt+"]" );
 				out.flush();
 				out.close();
 				return;
 			}
-			out.write( "Unknow command" );
-			out.flush();
-			out.close();
+			// assuming the DoAction did the job (export a ZIP file for example)
+			loggerCustomPage.info("#### "+pageName+" ##############################CustomPage: AssumingDoAction did the job (export a file)" );
+	            
 			return;
 		} catch (Exception e) {
 			StringWriter sw = new StringWriter();
 			e.printStackTrace(new PrintWriter(sw));
 			String exceptionDetails = sw.toString();
-			logger.severe("#### awacsCustomPage:Groovy Exception ["+e.toString()+"] at "+exceptionDetails);
+			loggerCustomPage.severe("#### "+pageName+":Groovy Exception ["+e.toString()+"] at "+exceptionDetails);
 		}
 	}
-
-	
-	/** -------------------------------------------------------------------------
-	 *
-	 * getCaseHistoryInJson
-	 * 
-	 */
-	private String getCaseHistoryInJson( long processInstanceId, boolean showSubProcess, PageResourceProvider pageResourceProvider, ProcessAPI processAPI,IdentityAPI identityApi, CommandAPI commandAPI)
-	{
-		Logger logger= Logger.getLogger("org.bonitasoft.custompage.awacs.groovy");
-		InputStream is = pageResourceProvider.getResourceAsStream("lib/CustomPageAwacs-1.0.1.jar");
-		
-		
-		String ping= com.bonitasoft.custompage.awacs.casehistory.CaseHistory.getPing();
-		logger.info("#### awacsCustomPage:Groovy Ping"+ping);
-		HashMap<String,Object> mapDetails = com.bonitasoft.custompage.awacs.casehistory.CaseHistory.getCaseDetails(processInstanceId, showSubProcess, is ,processAPI,identityApi,commandAPI);
-	 
-		String jsonDetailsSt = JSONValue.toJSONString( mapDetails );
-		logger.info("#### awacsCustomPage:Groovy End return ["+mapDetails+"] ==>"+jsonDetailsSt);
-		return jsonDetailsSt;
-	}
-	
-	
 	
 	/** -------------------------------------------------------------------------
 	 *
 	 *getIntegerParameter
 	 * 
 	 */
-	private int getIntegerParameter(HttpServletRequest request, String paramName, int defaultValue)
+	 public static getIntegerParameter(HttpServletRequest request, String paramName, Integer defaultValue)
 	{
 		String valueParamSt = request.getParameter(paramName);
 		if (valueParamSt==null  || valueParamSt.length()==0)
 		{
 			return defaultValue;
 		}
-		int valueParam=defaultValue;
 		try
 		{
-			valueParam = Integer.valueOf( valueParamSt );
+			return Integer.valueOf( valueParamSt );
 		}
 		catch( Exception e)
 		{
@@ -177,27 +157,25 @@ public class Index implements PageController {
 			e.printStackTrace(new PrintWriter(sw));
 			String exceptionDetails = sw.toString();
 			
-			logger.severe("#### awacsCustomPage:Groovy awacs: getinteger : Exception "+e.toString()+" on  ["+valueParamSt+"] at "+exceptionDetails );
-			valueParam= defaultValue;
+			loggerCustomPage.severe("#### "+pageName+":Groovy : getinteger : Exception "+e.toString()+" on  ["+valueParamSt+"] at "+exceptionDetails );
+			return defaultValue;
 		}
-		return valueParam;
 	}
 	/** -------------------------------------------------------------------------
 	 *
 	 *getBooleanParameter
 	 * 
 	 */
-	private boolean getBooleanParameter(HttpServletRequest request, String paramName, boolean defaultValue)
+	public static Boolean getBooleanParameter(HttpServletRequest request, String paramName, Boolean defaultValue)
 	{
 		String valueParamSt = request.getParameter(paramName);
 		if (valueParamSt==null  || valueParamSt.length()==0)
 		{
 			return defaultValue;
 		}
-		boolean valueParam=defaultValue;
 		try
 		{
-			valueParam = Boolean.valueOf( valueParamSt );
+			return  Boolean.valueOf( valueParamSt );
 		}
 		catch( Exception e)
 		{
@@ -205,10 +183,9 @@ public class Index implements PageController {
 			e.printStackTrace(new PrintWriter(sw));
 			String exceptionDetails = sw.toString();
 			
-			logger.severe("#### awacsCustomPage:Groovy awacs: getBoolean : Exception "+e.toString()+" on  ["+valueParamSt+"] at "+exceptionDetails );
-			valueParam= defaultValue;
+			loggerCustomPage.severe("#### "+pageName+":Groovy : getBoolean : Exception "+e.toString()+" on  ["+valueParamSt+"] at "+exceptionDetails );
+			return defaultValue;
 		}
-		return valueParam;
 	}
 	
 	/** -------------------------------------------------------------------------
@@ -217,26 +194,32 @@ public class Index implements PageController {
 	 * 
 	 */
 	private void runTheBonitaIndexDoGet(HttpServletRequest request, HttpServletResponse response, PageResourceProvider pageResourceProvider, PageContext pageContext) {
-				try {
-						def String indexContent;
-						pageResourceProvider.getResourceAsStream("index.html").withStream { InputStream s->
-								indexContent = s.getText()
-						}
-						
-						def String pageResource="pageResource?&page="+ request.getParameter("page")+"&location=";
-						
-						// 7.0 Live application : do not do that
-						// indexContent= indexContent.replace("@_USER_LOCALE_@", request.getParameter("locale"));
-						// indexContent= indexContent.replace("@_PAGE_RESOURCE_@", pageResource);
-						
-						response.setCharacterEncoding("UTF-8");
-						PrintWriter out = response.getWriter();
-						out.print(indexContent);
-						out.flush();
-						out.close();
-				} catch (Exception e) {
-						e.printStackTrace();
+		try {
+				def String indexContent;
+				pageResourceProvider.getResourceAsStream("index.html").withStream { InputStream s->
+						indexContent = s.getText()
 				}
+				
+				File pageDirectory = pageResourceProvider.getPageDirectory();
+				loggerCustomPage.info("#### "+pageName+": pageDirectory st="+pageDirectory.getAbsolutePath() );
+				        
+				// def String pageResource="pageResource?&page="+ request.getParameter("page")+"&location=";
+				// indexContent= indexContent.replace("@_USER_LOCALE_@", request.getParameter("locale"));
+				indexContent= indexContent.replace("@_CURRENTTIMEMILIS_@", String.valueOf(System.currentTimeMillis()));
+                indexContent= indexContent.replace("@_PAGEDIRECTORY_@", pageDirectory.getAbsolutePath()) ;
+				
+				response.setCharacterEncoding("UTF-8");
+				response.addHeader("content-type", "text/html");
+				
+				PrintWriter out = response.getWriter();
+				out.print(indexContent);
+				out.flush();
+				out.close();
+				loggerCustomPage.info("#### "+pageName+": return index.hml size("+indexContent.length()+"]");
+				
+		} catch (Exception e) {
+			loggerCustomPage.severe("#### "+pageName+":Error "+e.toString());
+		}
 		}
 
 }
